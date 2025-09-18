@@ -17,10 +17,56 @@ scene.add(scenery);
 const waterfall = createWaterfall();
 scene.add(waterfall);
 
-// Add an axes helper for dev mode
-const axesHelper = new THREE.AxesHelper(5); // The number is the size of the axes
-axesHelper.visible = false;
-scene.add(axesHelper);
+// --- Dev tools ---
+function createAxisLabel(text, position, color = 'black', size = 64) {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    const font = `bold ${size}px Arial`;
+    context.font = font;
+    const metrics = context.measureText(text);
+    const textWidth = metrics.width;
+    const padding = 10;
+
+    canvas.width = textWidth + padding * 2;
+    canvas.height = size + padding * 2;
+
+    context.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    context.beginPath();
+    context.roundRect(0, 0, canvas.width, canvas.height, [15]);
+    context.fill();
+
+    context.font = font;
+    context.fillStyle = color;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    
+    const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(spriteMaterial);
+    sprite.position.copy(position);
+    
+    sprite.scale.set(canvas.width * 0.01, canvas.height * 0.01, 1.0);
+
+    return sprite;
+}
+
+const devHelperGroup = new THREE.Group();
+const axesHelper = new THREE.AxesHelper(5);
+devHelperGroup.add(axesHelper);
+
+const axisDistance = 5.5;
+devHelperGroup.add(createAxisLabel('+X', new THREE.Vector3(axisDistance, 0, 0), '#ff0000'));
+devHelperGroup.add(createAxisLabel('-X', new THREE.Vector3(-axisDistance, 0, 0), '#ff0000'));
+devHelperGroup.add(createAxisLabel('+Y', new THREE.Vector3(0, axisDistance, 0), '#00ff00'));
+devHelperGroup.add(createAxisLabel('-Y', new THREE.Vector3(0, -axisDistance, 0), '#00ff00'));
+devHelperGroup.add(createAxisLabel('+Z', new THREE.Vector3(0, 0, axisDistance), '#0000ff'));
+devHelperGroup.add(createAxisLabel('-Z', new THREE.Vector3(0, 0, -axisDistance), '#0000ff'));
+
+devHelperGroup.visible = false;
+scene.add(devHelperGroup);
 
 // ensure lighting is present for Lambert materials
 createLights(scene);
@@ -69,7 +115,7 @@ if (devConsoleButton) {
     devConsoleButton.addEventListener('click', () => {
         const controls = initOrbitControls();
         controls.enabled = !controls.enabled;
-        axesHelper.visible = controls.enabled;
+        devHelperGroup.visible = controls.enabled;
         
         if (controls.enabled) {
             devConsoleButton.style.backgroundColor = 'rgba(255, 0, 0, 0.7)';
@@ -278,13 +324,13 @@ function handleGlobalKeyUp(event) {
             // If we're showing it, reset its style and ensure controls are disabled initially
             if (!devConsoleButton.classList.contains('hidden')) {
                  if (controls) controls.enabled = false;
-                 axesHelper.visible = false;
+                 devHelperGroup.visible = false;
                  devConsoleButton.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
                  devConsoleButton.style.borderColor = 'white';
             } else {
                 // If we're hiding it via keypress, also ensure controls are off
                 if (controls) controls.enabled = false;
-                axesHelper.visible = false;
+                devHelperGroup.visible = false;
             }
         }
     }
